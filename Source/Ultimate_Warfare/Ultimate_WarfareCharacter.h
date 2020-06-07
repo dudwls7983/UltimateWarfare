@@ -43,9 +43,15 @@ class AUltimate_WarfareCharacter : public ACharacter
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	bool isFire; // 발사 중인가
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	bool isCrouch; // 앉는 중인가
+
 	FTimeline ADSTimeline; // Aim Down Sight의 타임라인
 	FTimeline SprintTimeline; // Sprint의 타임라인
+	FTimeline CrouchTimeline; // Crouch의 타임라인
 	float nextShootTime; // 다음 발사 가능 시간
+
+	FVector CameraRelativeLocation;
 
 public:
 	AUltimate_WarfareCharacter();
@@ -123,6 +129,12 @@ protected:
 
 	void BeginFire();
 	void EndFire();
+
+	void BeginCrouch();
+	void EndCrouch();
+
+	UFUNCTION()
+	void InterpCrouch(float interp);
 	
 protected:
 	// APawn interface

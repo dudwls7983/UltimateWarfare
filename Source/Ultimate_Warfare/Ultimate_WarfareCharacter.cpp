@@ -77,6 +77,12 @@ AUltimate_WarfareCharacter::AUltimate_WarfareCharacter()
 
 	SprintTimeline = FTimeline();
 	SprintTimeline.AddInterpFloat(CameraCurveFloat, SprintInterpFunction, TEXT("InterpValue"));
+
+	FOnTimelineFloat CrouchInterpFunction;
+	CrouchInterpFunction.BindUFunction(this, FName("InterpCrouch"));
+
+	CrouchTimeline = FTimeline();
+	CrouchTimeline.AddInterpFloat(CameraCurveFloat, CrouchInterpFunction, TEXT("InterpValue"));
 }
 
 void AUltimate_WarfareCharacter::BeginPlay()
@@ -88,6 +94,8 @@ void AUltimate_WarfareCharacter::BeginPlay()
 	FP_Gun->AttachToComponent(Mesh1P, FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true), TEXT("R_GunSocket"));
 
 	Mesh1P->SetHiddenInGame(false, true);
+
+	CameraRelativeLocation = FirstPersonCameraComponent->GetRelativeTransform().GetLocation();
 }
 
 void AUltimate_WarfareCharacter::Tick(float delta)
@@ -100,6 +108,10 @@ void AUltimate_WarfareCharacter::Tick(float delta)
 	if (SprintTimeline.IsPlaying())
 	{
 		SprintTimeline.TickTimeline(delta);
+	}
+	if (CrouchTimeline.IsPlaying())
+	{
+		CrouchTimeline.TickTimeline(delta);
 	}
 	if (isFire)
 	{
@@ -137,6 +149,10 @@ void AUltimate_WarfareCharacter::SetupPlayerInputComponent(class UInputComponent
 	// Bind sprint event
 	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &AUltimate_WarfareCharacter::BeginSprint);
 	PlayerInputComponent->BindAction("Sprint", IE_Released, this, &AUltimate_WarfareCharacter::EndSprint);
+
+	// Bind crouch event
+	PlayerInputComponent->BindAction("Crouch", IE_Pressed, this, &AUltimate_WarfareCharacter::BeginCrouch);
+	PlayerInputComponent->BindAction("Crouch", IE_Released, this, &AUltimate_WarfareCharacter::EndCrouch);
 
 	PlayerInputComponent->BindAction("ResetVR", IE_Pressed, this, &AUltimate_WarfareCharacter::OnResetVR);
 
@@ -275,7 +291,7 @@ void AUltimate_WarfareCharacter::InterpADSFOV(float interp)
 void AUltimate_WarfareCharacter::BeginSprint()
 {
 	// 아래 행동 중에는 뛸 수 없다.
-	if (isADS || isFire) return;
+	if (isADS || isFire || isCrouch) return;
 
 	isSprint = true;
 	GetCharacterMovement()->MaxWalkSpeed = 600.f;
@@ -284,7 +300,7 @@ void AUltimate_WarfareCharacter::BeginSprint()
 
 void AUltimate_WarfareCharacter::EndSprint()
 {
-	if (isADS || isFire) return;
+	if (isADS || isFire || isCrouch) return;
 
 	isSprint = false;
 	GetCharacterMovement()->MaxWalkSpeed = 300.f;
@@ -305,4 +321,32 @@ void AUltimate_WarfareCharacter::BeginFire()
 void AUltimate_WarfareCharacter::EndFire()
 {
 	isFire = false;
+}
+
+void AUltimate_WarfareCharacter::BeginCrouch()
+{
+	// 달리는 중에 앉을 수 없다.
+	if (isSprint) return;
+
+	isCrouch = true;
+	GetCharacterMovement()->MaxWalkSpeed = 200.f;
+	CrouchTimeline.Play();
+}
+
+void AUltimate_WarfareCharacter::EndCrouch()
+{
+	if (isSprint) return;
+
+	isCrouch = false;
+	GetCharacterMovement()->MaxWalkSpeed = 300.f;
+	CrouchTimeline.Reverse();
+}
+
+void AUltimate_WarfareCharacter::InterpCrouch(float interp)
+{
+	GetCapsuleComponent()->SetCapsuleHalfHeight(FMath::Lerp<float, float>(88.f, 44.f, interp));
+
+	FVector ToCameraLocation = CameraRelativeLocation;
+	ToCameraLocation.Z -= 20.f;
+	FirstPersonCameraComponent->SetRelativeLocation(FMath::Lerp<FVector, float>(CameraRelativeLocation, ToCameraLocation, interp));
 }
