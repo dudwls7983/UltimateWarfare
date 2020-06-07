@@ -12,8 +12,6 @@
 #include "MotionControllerComponent.h"
 #include "XRMotionControllerBase.h" // for FXRMotionControllerBase::RightHandSourceId
 
-#include "Math/UnrealMathVectorCommon.h"
-
 DEFINE_LOG_CATEGORY_STATIC(LogFPChar, Warning, All);
 
 //////////////////////////////////////////////////////////////////////////
@@ -41,7 +39,7 @@ AUltimate_WarfareCharacter::AUltimate_WarfareCharacter()
 	Mesh1P->SetupAttachment(FirstPersonCameraComponent);
 	Mesh1P->bCastDynamicShadow = false;
 	Mesh1P->CastShadow = false;
-	Mesh1P->RelativeLocation = FVector(0.5f, 0.13f, -165.45f);
+	Mesh1P->RelativeLocation = FVector(2.5f, 0.13f, -165.45f);
 	Mesh1P->RelativeRotation = FRotator(0.f, -90.f, 0.f);
 
 	// Create a gun mesh component
@@ -85,12 +83,9 @@ void AUltimate_WarfareCharacter::BeginPlay()
 
 void AUltimate_WarfareCharacter::Tick(float delta)
 {
-	//UE_LOG(LogTemp, Display, TEXT("Tick"));
-
 	Super::Tick(delta);
 	if (ADSTimeline.IsPlaying())
 	{
-		UE_LOG(LogTemp, Display, TEXT("Timeline Tick"));
 		ADSTimeline.TickTimeline(delta);
 	}
 }
@@ -130,7 +125,6 @@ void AUltimate_WarfareCharacter::SetupPlayerInputComponent(class UInputComponent
 
 void AUltimate_WarfareCharacter::OnFire()
 {
-	UE_LOG(LogTemp, Display, TEXT("OnFire"));
 	// try and fire a projectile
 	if (ProjectileClass != NULL)
 	{
@@ -156,14 +150,21 @@ void AUltimate_WarfareCharacter::OnFire()
 		UGameplayStatics::PlaySoundAtLocation(this, FireSound, GetActorLocation());
 	}
 
+	TArray<UAnimMontage *> fireAnimation = isADS ? FireIronSightAnimation : FireAnimation;
+	int count = fireAnimation.Num();
 	// try and play a firing animation if specified
-	if (FireAnimation != NULL)
+	if (count > 0)
 	{
 		// Get the animation object for the arms mesh
 		UAnimInstance* AnimInstance = Mesh1P->GetAnimInstance();
 		if (AnimInstance != NULL)
 		{
-			AnimInstance->Montage_Play(FireAnimation, 1.f);
+			AnimInstance->Montage_Play(fireAnimation[FMath::RandRange(0, count - 1)], 1.f);
+		}
+		UAnimInstance* AnimInstance2 = FP_Gun->GetAnimInstance();
+		if (AnimInstance2 != NULL && RifleShootAnimation != NULL)
+		{
+			AnimInstance2->Montage_Play(RifleShootAnimation, 1.f);
 		}
 	}
 }
@@ -205,8 +206,6 @@ void AUltimate_WarfareCharacter::LookUpAtRate(float Rate)
 
 void AUltimate_WarfareCharacter::ToggleAimDownSight()
 {
-	//UE_LOG(LogTemp, Display, TEXT("ToggleAimDownSight"));
-
 	isADS = !isADS;
 	if (isADS)
 		ADSTimeline.Play();
@@ -216,7 +215,5 @@ void AUltimate_WarfareCharacter::ToggleAimDownSight()
 
 void AUltimate_WarfareCharacter::InterpAimDownSight(float interp)
 {
-	//UE_LOG(LogTemp, Display, TEXT("InterpAimDownSight %f"), interp);
-
 	FirstPersonCameraComponent->FieldOfView = FMath::Lerp<float, float>(90.f, 75.f, interp);
 }
