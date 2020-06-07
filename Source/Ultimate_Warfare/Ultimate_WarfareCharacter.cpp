@@ -12,7 +12,9 @@
 #include "MotionControllerComponent.h"
 #include "XRMotionControllerBase.h" // for FXRMotionControllerBase::RightHandSourceId
 
+#include "DrawDebugHelpers.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogFPChar, Warning, All);
 
@@ -55,9 +57,6 @@ AUltimate_WarfareCharacter::AUltimate_WarfareCharacter()
 	FP_MuzzleLocation = CreateDefaultSubobject<USceneComponent>(TEXT("MuzzleLocation"));
 	FP_MuzzleLocation->SetupAttachment(FP_Gun);
 	FP_MuzzleLocation->SetRelativeLocation(FVector(0.2f, 48.4f, -10.6f));
-
-	// Default offset from the character location for projectiles to spawn
-	GunOffset = FVector(100.0f, 0.0f, 10.0f);
 
 	GetCharacterMovement()->MaxWalkSpeed = 300.f;
 
@@ -156,22 +155,43 @@ void AUltimate_WarfareCharacter::SetupPlayerInputComponent(class UInputComponent
 
 void AUltimate_WarfareCharacter::OnFire()
 {
-	// try and fire a projectile
-	if (ProjectileClass != NULL)
+	UWorld* const World = GetWorld();
+	if (World != NULL)
 	{
-		UWorld* const World = GetWorld();
-		if (World != NULL)
+		//const FRotator SpawnRotation = GetControlRotation();
+		// MuzzleOffset is in camera space, so transform it to world space before offsetting from the character location to find the final muzzle position
+		//const FVector SpawnLocation = ((FP_MuzzleLocation != nullptr) ? FP_MuzzleLocation->GetComponentLocation() : GetActorLocation()) + SpawnRotation.RotateVector(GunOffset);
+
+		//Set Spawn Collision Handling Override
+		//FActorSpawnParameters ActorSpawnParams;
+		//ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding;
+
+		// spawn the projectile at the muzzle
+		//World->SpawnActor<AUltimate_WarfareProjectile>(ProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
+
+		APlayerCameraManager *camManager = GetWorld()->GetFirstPlayerController()->PlayerCameraManager;
+
+		const FVector EyePosition = camManager->GetCameraLocation();
+		const FVector EndLocation = EyePosition + camManager->GetCameraRotation().Vector() * 2048.f;
+		FVector force = (EndLocation - EyePosition).GetSafeNormal();
+
+		DrawDebugLine(GetWorld(), EyePosition, EndLocation, FColor::Red, false, 5.f, 0, 0.2f);
+
+		FHitResult hitResult;
+		GetWorld()->LineTraceSingleByChannel(hitResult, EyePosition, EndLocation, ECollisionChannel::ECC_Visibility);
+
+		AActor *hitObject = hitResult.GetActor();
+		if (hitObject != NULL)
 		{
-			const FRotator SpawnRotation = GetControlRotation();
-			// MuzzleOffset is in camera space, so transform it to world space before offsetting from the character location to find the final muzzle position
-			const FVector SpawnLocation = ((FP_MuzzleLocation != nullptr) ? FP_MuzzleLocation->GetComponentLocation() : GetActorLocation()) + SpawnRotation.RotateVector(GunOffset);
+			TArray<AActor*> ignoredActors;
+			UGameplayStatics::ApplyPointDamage(hitObject, 100.f, force, hitResult, GetWorld()->GetFirstPlayerController(), this, UDamageType::StaticClass());
+		}
 
-			//Set Spawn Collision Handling Override
-			FActorSpawnParameters ActorSpawnParams;
-			ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding;
-
-			// spawn the projectile at the muzzle
-			World->SpawnActor<AUltimate_WarfareProjectile>(ProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
+		// 움직일 수 있는 오브젝트는 힘을 가한다.
+		UPrimitiveComponent *hitComponent = hitResult.GetComponent();
+		if (hitComponent != NULL && hitComponent->Mobility == EComponentMobility::Movable)
+		{
+			hitComponent->AddImpulseAtLocation(force * 100000.f, hitResult.Location);
 		}
 	}
 
