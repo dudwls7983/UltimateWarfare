@@ -12,6 +12,8 @@
 #include "MotionControllerComponent.h"
 #include "XRMotionControllerBase.h" // for FXRMotionControllerBase::RightHandSourceId
 
+#include "GameFramework/CharacterMovementComponent.h"
+
 DEFINE_LOG_CATEGORY_STATIC(LogFPChar, Warning, All);
 
 //////////////////////////////////////////////////////////////////////////
@@ -57,17 +59,23 @@ AUltimate_WarfareCharacter::AUltimate_WarfareCharacter()
 	// Default offset from the character location for projectiles to spawn
 	GunOffset = FVector(100.0f, 0.0f, 10.0f);
 
-	ADSFloatCurve = CreateDefaultSubobject<UCurveFloat>(TEXT("AimDownSightCurve"));
-	ADSFloatCurve->FloatCurve.AddKey(0.f, 0.f);
-	ADSFloatCurve->FloatCurve.AddKey(0.15f, 1.f);
+	CameraCurveFloat = CreateDefaultSubobject<UCurveFloat>(TEXT("AimDownSightCurve"));
+	CameraCurveFloat->FloatCurve.AddKey(0.f, 0.f);
+	CameraCurveFloat->FloatCurve.AddKey(0.15f, 1.f);
 
 	PrimaryActorTick.bCanEverTick = true;
 	
-	FOnTimelineFloat timelineFunction;
-	timelineFunction.BindUFunction(this, FName("InterpAimDownSight"));
+	FOnTimelineFloat ADSInterpFunction;
+	ADSInterpFunction.BindUFunction(this, FName("InterpADSFOV"));
 
 	ADSTimeline = FTimeline();
-	ADSTimeline.AddInterpFloat(ADSFloatCurve, timelineFunction, TEXT("InterpValue"));
+	ADSTimeline.AddInterpFloat(CameraCurveFloat, ADSInterpFunction, TEXT("InterpValue"));
+
+	FOnTimelineFloat SprintInterpFunction;
+	SprintInterpFunction.BindUFunction(this, FName("InterpSprintFOV"));
+
+	SprintTimeline = FTimeline();
+	SprintTimeline.AddInterpFloat(CameraCurveFloat, SprintInterpFunction, TEXT("InterpValue"));
 }
 
 void AUltimate_WarfareCharacter::BeginPlay()
@@ -88,6 +96,10 @@ void AUltimate_WarfareCharacter::Tick(float delta)
 	{
 		ADSTimeline.TickTimeline(delta);
 	}
+	if (SprintTimeline.IsPlaying())
+	{
+		SprintTimeline.TickTimeline(delta);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -107,6 +119,10 @@ void AUltimate_WarfareCharacter::SetupPlayerInputComponent(class UInputComponent
 
 	// Bind aim event
 	PlayerInputComponent->BindAction("Aim", IE_Pressed, this, &AUltimate_WarfareCharacter::ToggleAimDownSight);
+
+	// Bind sprint event
+	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &AUltimate_WarfareCharacter::BeginSprint);
+	PlayerInputComponent->BindAction("Sprint", IE_Released, this, &AUltimate_WarfareCharacter::EndSprint);
 
 	PlayerInputComponent->BindAction("ResetVR", IE_Pressed, this, &AUltimate_WarfareCharacter::OnResetVR);
 
@@ -206,6 +222,9 @@ void AUltimate_WarfareCharacter::LookUpAtRate(float Rate)
 
 void AUltimate_WarfareCharacter::ToggleAimDownSight()
 {
+	// 뛰는 중엔 aim down sight를 할 수 없다.
+	if (isSprint) return;
+
 	isADS = !isADS;
 	if (isADS)
 		ADSTimeline.Play();
@@ -213,7 +232,31 @@ void AUltimate_WarfareCharacter::ToggleAimDownSight()
 		ADSTimeline.Reverse();
 }
 
-void AUltimate_WarfareCharacter::InterpAimDownSight(float interp)
+void AUltimate_WarfareCharacter::InterpADSFOV(float interp)
 {
 	FirstPersonCameraComponent->FieldOfView = FMath::Lerp<float, float>(90.f, 75.f, interp);
+}
+
+void AUltimate_WarfareCharacter::BeginSprint()
+{
+	// aim down sight 중에는 뛸 수 없다.
+	if (isADS) return;
+
+	isSprint = true;
+	GetCharacterMovement()->MaxWalkSpeed = 600.f;
+	SprintTimeline.Play();
+}
+
+void AUltimate_WarfareCharacter::EndSprint()
+{
+	if (isADS) return;
+
+	isSprint = false;
+	GetCharacterMovement()->MaxWalkSpeed = 300.f;
+	SprintTimeline.Reverse();
+}
+
+void AUltimate_WarfareCharacter::InterpSprintFOV(float interp)
+{
+	FirstPersonCameraComponent->FieldOfView = FMath::Lerp<float, float>(90.f, 100.f, interp);
 }

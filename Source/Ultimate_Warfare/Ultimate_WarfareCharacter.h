@@ -32,12 +32,16 @@ class AUltimate_WarfareCharacter : public ACharacter
 	class UCameraComponent* FirstPersonCameraComponent;
 
 	UPROPERTY(EditAnywhere, meta = (AllowPrivateAccess = "true"))
-	UCurveFloat *ADSFloatCurve;
+	UCurveFloat *CameraCurveFloat; // 카메라 FOV값 변화를 위한 Curve Float
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	bool isADS; // Aim Down Sight를 사용중인가
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	bool isSprint; // 뛰는 중인가
+
 	FTimeline ADSTimeline; // Aim Down Sight의 타임라인
+	FTimeline SprintTimeline; // Sprint의 타임라인
 
 public:
 	AUltimate_WarfareCharacter();
@@ -109,7 +113,13 @@ protected:
 	void ToggleAimDownSight();
 
 	UFUNCTION()
-	void InterpAimDownSight(float interp);
+	void InterpADSFOV(float interp);
+
+	void BeginSprint();
+	void EndSprint();
+
+	UFUNCTION()
+	void InterpSprintFOV(float interp);
 	
 protected:
 	// APawn interface
