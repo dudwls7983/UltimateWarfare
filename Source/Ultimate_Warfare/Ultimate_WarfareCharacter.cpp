@@ -43,7 +43,7 @@ AUltimate_WarfareCharacter::AUltimate_WarfareCharacter()
 	Mesh1P->SetupAttachment(FirstPersonCameraComponent);
 	Mesh1P->bCastDynamicShadow = false;
 	Mesh1P->CastShadow = false;
-	Mesh1P->RelativeLocation = FVector(2.5f, 0.13f, -165.45f);
+	Mesh1P->RelativeLocation = FVector(2.5f, 0.13f, -165.5f);
 	Mesh1P->RelativeRotation = FRotator(0.f, -90.f, 0.f);
 
 	// Create a gun mesh component
@@ -53,6 +53,7 @@ AUltimate_WarfareCharacter::AUltimate_WarfareCharacter()
 	FP_Gun->CastShadow = false;
 	// FP_Gun->SetupAttachment(Mesh1P, TEXT("GripPoint"));
 	FP_Gun->SetupAttachment(Mesh1P);
+	FP_Gun->RelativeRotation = FRotator(0.f, 0.f, 0.2f);
 
 	FP_MuzzleLocation = CreateDefaultSubobject<USceneComponent>(TEXT("MuzzleLocation"));
 	FP_MuzzleLocation->SetupAttachment(FP_Gun);
@@ -191,7 +192,7 @@ void AUltimate_WarfareCharacter::OnFire()
 		const FVector EndLocation = EyePosition + camManager->GetCameraRotation().Vector() * 2048.f;
 		FVector force = (EndLocation - EyePosition).GetSafeNormal();
 
-		DrawDebugLine(GetWorld(), EyePosition, EndLocation, FColor::Red, false, 5.f, 0, 0.2f);
+		DrawDebugLine(GetWorld(), EyePosition, EndLocation, FColor::Red, false, 20.f, 0, 0.5f);
 
 		FHitResult hitResult;
 		GetWorld()->LineTraceSingleByChannel(hitResult, EyePosition, EndLocation, ECollisionChannel::ECC_Visibility);
