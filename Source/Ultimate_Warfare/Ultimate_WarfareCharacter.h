@@ -40,8 +40,12 @@ class AUltimate_WarfareCharacter : public ACharacter
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	bool isSprint; // 뛰는 중인가
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	bool isFire; // 발사 중인가
+
 	FTimeline ADSTimeline; // Aim Down Sight의 타임라인
 	FTimeline SprintTimeline; // Sprint의 타임라인
+	float nextShootTime; // 다음 발사 가능 시간
 
 public:
 	AUltimate_WarfareCharacter();
@@ -83,6 +87,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
 	class UAnimMontage* RifleShootAnimation;
 
+	/** AnimMontage to play each time we fire */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
+	float fireRate = 0.1f;
+
 protected:
 	
 	/** Fires a projectile. */
@@ -120,6 +128,9 @@ protected:
 
 	UFUNCTION()
 	void InterpSprintFOV(float interp);
+
+	void BeginFire();
+	void EndFire();
 	
 protected:
 	// APawn interface

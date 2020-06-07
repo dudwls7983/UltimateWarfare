@@ -59,6 +59,8 @@ AUltimate_WarfareCharacter::AUltimate_WarfareCharacter()
 	// Default offset from the character location for projectiles to spawn
 	GunOffset = FVector(100.0f, 0.0f, 10.0f);
 
+	GetCharacterMovement()->MaxWalkSpeed = 300.f;
+
 	CameraCurveFloat = CreateDefaultSubobject<UCurveFloat>(TEXT("AimDownSightCurve"));
 	CameraCurveFloat->FloatCurve.AddKey(0.f, 0.f);
 	CameraCurveFloat->FloatCurve.AddKey(0.15f, 1.f);
@@ -100,6 +102,18 @@ void AUltimate_WarfareCharacter::Tick(float delta)
 	{
 		SprintTimeline.TickTimeline(delta);
 	}
+	if (isFire)
+	{
+		// 아래 행동 중에 총을 발사할 수 없다.
+		if (isSprint) return;
+
+		float time = GetWorld()->GetTimeSeconds();
+		if (time > nextShootTime)
+		{
+			nextShootTime = time + fireRate;
+			OnFire();
+		}
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -115,7 +129,8 @@ void AUltimate_WarfareCharacter::SetupPlayerInputComponent(class UInputComponent
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
 
 	// Bind fire event
-	PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &AUltimate_WarfareCharacter::OnFire);
+	PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &AUltimate_WarfareCharacter::BeginFire);
+	PlayerInputComponent->BindAction("Fire", IE_Released, this, &AUltimate_WarfareCharacter::EndFire);
 
 	// Bind aim event
 	PlayerInputComponent->BindAction("Aim", IE_Pressed, this, &AUltimate_WarfareCharacter::ToggleAimDownSight);
@@ -222,8 +237,8 @@ void AUltimate_WarfareCharacter::LookUpAtRate(float Rate)
 
 void AUltimate_WarfareCharacter::ToggleAimDownSight()
 {
-	// 뛰는 중엔 aim down sight를 할 수 없다.
-	if (isSprint) return;
+	// 아래 행동 중에는 aim down sight를 할 수 없다.
+	if (isSprint || isFire) return;
 
 	isADS = !isADS;
 	if (isADS)
@@ -239,8 +254,8 @@ void AUltimate_WarfareCharacter::InterpADSFOV(float interp)
 
 void AUltimate_WarfareCharacter::BeginSprint()
 {
-	// aim down sight 중에는 뛸 수 없다.
-	if (isADS) return;
+	// 아래 행동 중에는 뛸 수 없다.
+	if (isADS || isFire) return;
 
 	isSprint = true;
 	GetCharacterMovement()->MaxWalkSpeed = 600.f;
@@ -249,7 +264,7 @@ void AUltimate_WarfareCharacter::BeginSprint()
 
 void AUltimate_WarfareCharacter::EndSprint()
 {
-	if (isADS) return;
+	if (isADS || isFire) return;
 
 	isSprint = false;
 	GetCharacterMovement()->MaxWalkSpeed = 300.f;
@@ -259,4 +274,15 @@ void AUltimate_WarfareCharacter::EndSprint()
 void AUltimate_WarfareCharacter::InterpSprintFOV(float interp)
 {
 	FirstPersonCameraComponent->FieldOfView = FMath::Lerp<float, float>(90.f, 100.f, interp);
+}
+
+void AUltimate_WarfareCharacter::BeginFire()
+{
+	// isReloading = true then return
+	isFire = true;
+}
+
+void AUltimate_WarfareCharacter::EndFire()
+{
+	isFire = false;
 }
