@@ -60,13 +60,13 @@ AUltimate_WarfareCharacter::AUltimate_WarfareCharacter()
 	FP_MuzzleLocation->SetRelativeLocation(FVector(0.2f, 48.4f, -10.6f));
 
 	GetCharacterMovement()->MaxWalkSpeed = 300.f;
+	PrimaryActorTick.bCanEverTick = true;
 
 	CameraCurveFloat = CreateDefaultSubobject<UCurveFloat>(TEXT("AimDownSightCurve"));
+	CameraCurveFloat->FloatCurve.Reset();
 	CameraCurveFloat->FloatCurve.AddKey(0.f, 0.f);
 	CameraCurveFloat->FloatCurve.AddKey(0.15f, 1.f);
 
-	PrimaryActorTick.bCanEverTick = true;
-	
 	FOnTimelineFloat ADSInterpFunction;
 	ADSInterpFunction.BindUFunction(this, FName("InterpADSFOV"));
 
@@ -84,6 +84,18 @@ AUltimate_WarfareCharacter::AUltimate_WarfareCharacter()
 
 	CrouchTimeline = FTimeline();
 	CrouchTimeline.AddInterpFloat(CameraCurveFloat, CrouchInterpFunction, TEXT("InterpValue"));
+
+	RecoilCurveFloat = CreateDefaultSubobject<UCurveFloat>(TEXT("RecoilCurve"));
+	RecoilCurveFloat->FloatCurve.Reset();
+	RecoilCurveFloat->FloatCurve.AddKey(0.f, 0.f);
+	RecoilCurveFloat->FloatCurve.AddKey(0.2f, 0.f);
+	RecoilCurveFloat->FloatCurve.AddKey(0.3f, 1.f);
+
+	FOnTimelineFloat RecoilInterpFunction;
+	RecoilInterpFunction.BindUFunction(this, FName("InterpRecoil"));
+
+	RecoilTimeline = FTimeline();
+	RecoilTimeline.AddInterpFloat(RecoilCurveFloat, RecoilInterpFunction, TEXT("InterpValue"));
 }
 
 void AUltimate_WarfareCharacter::BeginPlay()
@@ -113,6 +125,10 @@ void AUltimate_WarfareCharacter::Tick(float delta)
 	if (CrouchTimeline.IsPlaying())
 	{
 		CrouchTimeline.TickTimeline(delta);
+	}
+	if (RecoilTimeline.IsPlaying())
+	{
+		RecoilTimeline.TickTimeline(delta);
 	}
 	if (isFire)
 	{
@@ -189,10 +205,10 @@ void AUltimate_WarfareCharacter::OnFire()
 		APlayerCameraManager *camManager = GetWorld()->GetFirstPlayerController()->PlayerCameraManager;
 
 		const FVector EyePosition = camManager->GetCameraLocation();
-		const FVector EndLocation = EyePosition + camManager->GetCameraRotation().Vector() * 2048.f;
+		const FVector EndLocation = EyePosition + (camManager->GetCameraRotation() + CameraRecoilVector).Vector() * maxDistance;
 		FVector force = (EndLocation - EyePosition).GetSafeNormal();
 
-		DrawDebugLine(GetWorld(), EyePosition, EndLocation, FColor::Red, false, 20.f, 0, 0.5f);
+		DrawDebugLine(GetWorld(), EyePosition, EndLocation, FColor::Red, false, 10.f, 0, 0.5f);
 
 		FHitResult hitResult;
 		GetWorld()->LineTraceSingleByChannel(hitResult, EyePosition, EndLocation, ECollisionChannel::ECC_Visibility);
@@ -234,6 +250,27 @@ void AUltimate_WarfareCharacter::OnFire()
 		{
 			AnimInstance2->Montage_Play(RifleShootAnimation, 1.f);
 		}
+	}
+
+	if (recoilRate > 0.f)
+	{
+		/*AddControllerPitchInput(-recoilRate);
+		AddControllerYawInput(FMath::FRandRange(-recoilRate, recoilRate));
+		UE_LOG(LogTemp, Display, TEXT("%s"), *FirstPersonCameraComponent->RelativeRotation.ToString());*/
+		CameraRecoilVector.Pitch -= recoilRate;
+		CameraRecoilVector.Pitch = FMath::Max(CameraRecoilVector.Pitch, recoilRate * -5);
+
+		CameraRecoilVector.Yaw += FMath::FRandRange(-recoilRate, recoilRate);
+		CameraRecoilVector.Yaw = FMath::Clamp(CameraRecoilVector.Yaw, recoilRate * -5, recoilRate * 5);
+
+		FRotator newRotation = CameraRecoilVector - PreviousRecoilVector;
+
+		AddControllerPitchInput(newRotation.Pitch);
+		AddControllerYawInput(newRotation.Yaw);
+
+		PreviousRecoilVector = CameraRecoilVector;
+
+		RecoilTimeline.PlayFromStart();
 	}
 }
 
@@ -295,7 +332,7 @@ void AUltimate_WarfareCharacter::BeginSprint()
 	if (isADS || isFire || isCrouch) return;
 
 	isSprint = true;
-	GetCharacterMovement()->MaxWalkSpeed = 600.f;
+	GetCharacterMovement()->MaxWalkSpeed = 750.f;
 	SprintTimeline.Play();
 }
 
@@ -330,7 +367,7 @@ void AUltimate_WarfareCharacter::BeginCrouch()
 	if (isSprint) return;
 
 	isCrouch = true;
-	GetCharacterMovement()->MaxWalkSpeed = 200.f;
+	GetCharacterMovement()->MaxWalkSpeed = 150.f;
 	CrouchTimeline.Play();
 }
 
@@ -350,4 +387,16 @@ void AUltimate_WarfareCharacter::InterpCrouch(float interp)
 	FVector ToCameraLocation = CameraRelativeLocation;
 	ToCameraLocation.Z -= 20.f;
 	FirstPersonCameraComponent->SetRelativeLocation(FMath::Lerp<FVector, float>(CameraRelativeLocation, ToCameraLocation, interp));
+}
+
+void AUltimate_WarfareCharacter::InterpRecoil(float interp)
+{
+	CameraRecoilVector = FMath::Lerp<FRotator, float>(CameraRecoilVector, FRotator::ZeroRotator, interp);
+
+	FRotator newRotation = CameraRecoilVector - PreviousRecoilVector;
+
+	AddControllerPitchInput(newRotation.Pitch);
+	AddControllerYawInput(newRotation.Yaw);
+
+	PreviousRecoilVector = CameraRecoilVector;
 }

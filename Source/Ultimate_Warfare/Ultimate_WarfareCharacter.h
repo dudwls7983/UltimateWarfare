@@ -31,7 +31,7 @@ class AUltimate_WarfareCharacter : public ACharacter
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	class UCameraComponent* FirstPersonCameraComponent;
 
-	UPROPERTY(EditAnywhere, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(VisibleAnywhere, meta = (AllowPrivateAccess = "true"))
 	UCurveFloat *CameraCurveFloat; // 카메라 FOV값 변화를 위한 Curve Float
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
@@ -46,12 +46,26 @@ class AUltimate_WarfareCharacter : public ACharacter
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	bool isCrouch; // 앉는 중인가
 
+	UPROPERTY(VisibleAnywhere, meta = (AllowPrivateAccess = "true"))
+	UCurveFloat *RecoilCurveFloat; // Recoil 딜레이를 위한 Curve Float
+
+	UPROPERTY(VisibleAnywhere)
 	FTimeline ADSTimeline; // Aim Down Sight의 타임라인
+
+	UPROPERTY(VisibleAnywhere)
 	FTimeline SprintTimeline; // Sprint의 타임라인
+
+	UPROPERTY(VisibleAnywhere)
 	FTimeline CrouchTimeline; // Crouch의 타임라인
+
+	UPROPERTY(VisibleAnywhere)
+	FTimeline RecoilTimeline; // Recoil의 타임라인
+
 	float nextShootTime; // 다음 발사 가능 시간
 
 	FVector CameraRelativeLocation;
+	FRotator CameraRecoilVector = FRotator::ZeroRotator;
+	FRotator PreviousRecoilVector = FRotator::ZeroRotator;
 
 public:
 	AUltimate_WarfareCharacter();
@@ -88,6 +102,14 @@ public:
 	/** need time to fire */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
 	float fireRate = 0.1f;
+
+	/** recoil of weapon */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
+	float recoilRate = 0.3f;
+
+	/** effective range */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
+	float maxDistance = 4000.f;
 
 protected:
 	
@@ -135,6 +157,9 @@ protected:
 
 	UFUNCTION()
 	void InterpCrouch(float interp);
+
+	UFUNCTION()
+	void InterpRecoil(float interp);
 	
 protected:
 	// APawn interface
