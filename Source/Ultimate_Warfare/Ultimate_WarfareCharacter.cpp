@@ -109,6 +109,8 @@ void AUltimate_WarfareCharacter::BeginPlay()
 	Mesh1P->SetHiddenInGame(false, true);
 
 	CameraRelativeLocation = FirstPersonCameraComponent->GetRelativeTransform().GetLocation();
+
+	TestFunction();
 }
 
 void AUltimate_WarfareCharacter::Tick(float delta)
@@ -186,6 +188,11 @@ void AUltimate_WarfareCharacter::SetupPlayerInputComponent(class UInputComponent
 	PlayerInputComponent->BindAxis("LookUpRate", this, &AUltimate_WarfareCharacter::LookUpAtRate);
 }
 
+void AUltimate_WarfareCharacter::TestFunction()
+{
+	UE_LOG(LogTemp, Display, TEXT("Ultimate_WarfareCharacter"));
+}
+
 void AUltimate_WarfareCharacter::OnFire()
 {
 	UWorld* const World = GetWorld();
@@ -208,10 +215,10 @@ void AUltimate_WarfareCharacter::OnFire()
 		const FVector EndLocation = EyePosition + (camManager->GetCameraRotation() + CameraRecoilVector).Vector() * maxDistance;
 		FVector force = (EndLocation - EyePosition).GetSafeNormal();
 
-		DrawDebugLine(GetWorld(), EyePosition, EndLocation, FColor::Red, false, 10.f, 0, 0.5f);
-
 		FHitResult hitResult;
 		GetWorld()->LineTraceSingleByChannel(hitResult, EyePosition, EndLocation, ECollisionChannel::ECC_Visibility);
+
+		DrawDebugLine(GetWorld(), EyePosition, hitResult.Location, FColor::Red, false, 10.f, 0, 0.5f);
 
 		AActor *hitObject = hitResult.GetActor();
 		if (hitObject != NULL)
