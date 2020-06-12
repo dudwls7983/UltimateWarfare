@@ -2,7 +2,10 @@
 
 #include "Ultimate_WarfareEnemy.h"
 
-
+AUltimate_WarfareEnemy::AUltimate_WarfareEnemy()
+{
+	stateMachine = CreateDefaultSubobject<UStateMachine>(FName("State Machine"));
+}
 
 void AUltimate_WarfareEnemy::TestFunction()
 {
