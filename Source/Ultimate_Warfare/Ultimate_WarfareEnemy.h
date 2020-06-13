@@ -9,6 +9,13 @@
 #include "Perception/AISenseConfig_Sight.h"
 #include "Ultimate_WarfareEnemy.generated.h"
 
+enum class EEnemyState : uint8
+{
+	ES_Idle UMETA(DisplayName = "Idle"),
+	ES_Chase UMETA(DisplayName = "Chase"),
+	ES_Attack UMETA(DisplayName = "Attack"),
+};
+
 /**
  * 
  */
@@ -27,14 +34,31 @@ private:
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	UAISenseConfig_Sight *sightConfig;
 
+	AActor *target; // Enemy의 타겟
+	bool canSeeTarget; // 타겟을 볼수 있는지 여부
+	float chaseStartTime; // Chase 시작 시간
+
 public:
 	AUltimate_WarfareEnemy();
+
+	FORCEINLINE AActor *GetTarget() const { return target; }
+	FORCEINLINE float GetChaseStartTime() const { return chaseStartTime; }
+	FORCEINLINE bool CanSeeTarget() const { return canSeeTarget; }
+
+	FORCEINLINE void SetTarget(AActor *newTarget) { target = newTarget; }
+	FORCEINLINE void SetState(UState *newState) { stateMachine->SetState(newState); }
+	FORCEINLINE void SetChaseStartTime(float time) { chaseStartTime = time; }
 
 	UFUNCTION()
 	void OnSightUpdate(const TArray<AActor *> &actors);
 
 protected:
 	virtual void BeginPlay();
+
+public:
+	/** how many time to chase the target */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
+	float chaseTime = 5.f;
 	
-	
+	TMap<EEnemyState, UState *> stateMap;
 };

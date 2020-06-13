@@ -12,6 +12,7 @@ UStateMachine::UStateMachine()
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
 
+	owner = Cast<AUltimate_WarfareEnemy>(GetOwner());;
 	// ...
 }
 
@@ -21,10 +22,10 @@ void UStateMachine::SetState(UState * newState)
 	if (currentState != nullptr)
 	{
 		UE_LOG(LogTemp, Display, TEXT("%s SetState %s -> %s"), *GetOwner()->GetName(), *currentState->GetName(), *newState->GetName());
-		currentState->OnExit(GetOwner());
+		currentState->OnExit(owner);
 	}
 
-	newState->OnEnter(GetOwner());
+	newState->OnEnter(owner);
 
 	currentState = newState;
 }
@@ -47,7 +48,7 @@ void UStateMachine::TickComponent(float DeltaTime, ELevelTick TickType, FActorCo
 	// ...
 	if (currentState != nullptr)
 	{
-		currentState->OnUpdate(GetOwner());
+		currentState->OnUpdate(owner);
 	}
 }
 

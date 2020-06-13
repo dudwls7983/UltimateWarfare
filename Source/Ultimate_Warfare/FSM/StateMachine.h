@@ -4,9 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-#include "FSM/State.h"
 #include "StateMachine.generated.h"
 
+class UState;
+class AUltimate_WarfareEnemy;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class ULTIMATE_WARFARE_API UStateMachine : public UActorComponent
@@ -30,5 +31,7 @@ public:
 private:
 	UPROPERTY()
 	UState *currentState;
+
+	AUltimate_WarfareEnemy *owner;
 	
 };
