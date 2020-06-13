@@ -214,7 +214,12 @@ void AUltimate_WarfareCharacter::OnFire()
 		APlayerCameraManager *camManager = GetWorld()->GetFirstPlayerController()->PlayerCameraManager;
 
 		const FVector EyePosition = camManager->GetCameraLocation();
-		const FVector EndLocation = EyePosition + (camManager->GetCameraRotation() + CameraRecoilVector).Vector() * maxDistance;
+		FRotator EyeRotation = camManager->GetCameraRotation();
+		float randFloat = FMath::FRandRange(0, PI);
+		float inaccuracy = FMath::FRandRange(0, inAccuracy);
+		EyeRotation.Pitch -= FMath::Sin(randFloat) * inaccuracy;
+		EyeRotation.Yaw += FMath::Cos(randFloat) * inaccuracy;
+		const FVector EndLocation = EyePosition + EyeRotation.Vector() * maxDistance;
 		FVector force = (EndLocation - EyePosition).GetSafeNormal();
 
 		FHitResult hitResult;

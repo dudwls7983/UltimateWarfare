@@ -100,6 +100,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
 	float recoilRate = 0.3f;
 
+	/** recoil of weapon */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
+	float inAccuracy = 0.1f;
+
 	/** effective range */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
 	float maxDistance = 4000.f;
