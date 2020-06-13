@@ -30,10 +30,12 @@ AUltimate_WarfareCharacter::AUltimate_WarfareCharacter()
 	BaseTurnRate = 45.f;
 	BaseLookUpRate = 45.f;
 
+	GetMesh()->RelativeLocation = FVector(0.f, 0.f, -100.f);
+
 	// Create a CameraComponent	
 	FirstPersonCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
 	FirstPersonCameraComponent->SetupAttachment(GetMesh());
-	FirstPersonCameraComponent->RelativeLocation = FVector(0.f, 0.f, 60.f);
+	FirstPersonCameraComponent->RelativeLocation = FVector(0.f, 0.f, 160.f);
 	FirstPersonCameraComponent->RelativeRotation = FRotator(0.f, 90.f, 0.f);
 	FirstPersonCameraComponent->bUsePawnControlRotation = true;
 
@@ -229,7 +231,7 @@ void AUltimate_WarfareCharacter::OnFire()
 
 		// 움직일 수 있는 오브젝트는 힘을 가한다.
 		UPrimitiveComponent *hitComponent = hitResult.GetComponent();
-		if (hitComponent != NULL && hitComponent->Mobility == EComponentMobility::Movable)
+		if (hitComponent != NULL && hitComponent->Mobility == EComponentMobility::Movable && hitComponent->IsSimulatingPhysics() == true)
 		{
 			hitComponent->AddImpulseAtLocation(force * 100000.f, hitResult.Location);
 		}

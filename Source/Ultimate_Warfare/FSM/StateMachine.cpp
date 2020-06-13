@@ -1,6 +1,8 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "StateMachine.h"
+#include "GameFramework/Actor.h"
+#include "FSM/State/Idle.h"
 
 
 // Sets default values for this component's properties
@@ -14,13 +16,26 @@ UStateMachine::UStateMachine()
 }
 
 
+void UStateMachine::SetState(UState * newState)
+{
+	if (currentState != nullptr)
+	{
+		UE_LOG(LogTemp, Display, TEXT("%s SetState %s -> %s"), *GetOwner()->GetName(), *currentState->GetName(), *newState->GetName());
+		currentState->OnExit(GetOwner());
+	}
+
+	newState->OnEnter(GetOwner());
+
+	currentState = newState;
+}
+
 // Called when the game starts
 void UStateMachine::BeginPlay()
 {
 	Super::BeginPlay();
 
 	// ...
-	UE_LOG(LogTemp, Display, TEXT("setup statemachine complete"));
+	SetState(UIdle::GetInstance());
 }
 
 
@@ -30,5 +45,9 @@ void UStateMachine::TickComponent(float DeltaTime, ELevelTick TickType, FActorCo
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
 	// ...
+	if (currentState != nullptr)
+	{
+		currentState->OnUpdate(GetOwner());
+	}
 }
 
