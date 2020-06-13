@@ -5,13 +5,13 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Components/TimelineComponent.h"
-
+#include "GenericTeamAgentInterface.h"
 #include "Ultimate_WarfareCharacter.generated.h"
 
 class UInputComponent;
 
 UCLASS(config=Game)
-class AUltimate_WarfareCharacter : public ACharacter
+class AUltimate_WarfareCharacter : public ACharacter, public IGenericTeamAgentInterface
 {
 	GENERATED_BODY()
 
@@ -43,6 +43,9 @@ class AUltimate_WarfareCharacter : public ACharacter
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	bool isCrouch; // 앉는 중인가
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	class UAIPerceptionStimuliSourceComponent *stimuliSource;
+
 	UPROPERTY()
 	UCurveFloat *CameraCurveFloat; // 카메라 FOV값 변화를 위한 Curve Float
 	UPROPERTY()
@@ -65,6 +68,8 @@ public:
 protected:
 	virtual void BeginPlay();
 	virtual void Tick(float delta) override;
+
+	FGenericTeamId TeamID;
 
 public:
 	/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
@@ -161,6 +166,8 @@ protected:
 	// APawn interface
 	virtual void SetupPlayerInputComponent(UInputComponent* InputComponent) override;
 	// End of APawn interface
+
+	virtual FGenericTeamId GetGenericTeamId() const override { return TeamID; }
 
 public:
 	/** Returns Mesh1P subobject **/

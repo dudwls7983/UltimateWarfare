@@ -15,6 +15,9 @@
 #include "DrawDebugHelpers.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "Perception/AIPerceptionSystem.h"
+#include "Perception/AIPerceptionStimuliSourceComponent.h"
+#include "Perception/AISenseConfig_Sight.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogFPChar, Warning, All);
 
@@ -31,6 +34,7 @@ AUltimate_WarfareCharacter::AUltimate_WarfareCharacter()
 	BaseLookUpRate = 45.f;
 
 	GetMesh()->RelativeLocation = FVector(0.f, 0.f, -100.f);
+	GetMesh()->RelativeRotation = FRotator(0.f, -90.f, 0.f);
 
 	// Create a CameraComponent	
 	FirstPersonCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
@@ -60,6 +64,9 @@ AUltimate_WarfareCharacter::AUltimate_WarfareCharacter()
 	FP_MuzzleLocation = CreateDefaultSubobject<USceneComponent>(TEXT("MuzzleLocation"));
 	FP_MuzzleLocation->SetupAttachment(FP_Gun);
 	FP_MuzzleLocation->SetRelativeLocation(FVector(0.2f, 48.4f, -10.6f));
+
+	stimuliSource = CreateDefaultSubobject<UAIPerceptionStimuliSourceComponent>(FName("AI Perception Stimuli Source"));
+	stimuliSource->RegisterForSense(UAISense_Sight::StaticClass());
 
 	GetCharacterMovement()->MaxWalkSpeed = 300.f;
 	PrimaryActorTick.bCanEverTick = true;
@@ -100,6 +107,8 @@ AUltimate_WarfareCharacter::AUltimate_WarfareCharacter()
 
 	RecoilTimeline = FTimeline();
 	RecoilTimeline.AddInterpFloat(RecoilCurveFloat, RecoilInterpFunction, TEXT("InterpValue"));
+
+	TeamID = FGenericTeamId(0);
 }
 
 void AUltimate_WarfareCharacter::BeginPlay()
