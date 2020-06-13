@@ -43,10 +43,9 @@ class AUltimate_WarfareCharacter : public ACharacter
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	bool isCrouch; // 앉는 중인가
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY()
 	UCurveFloat *CameraCurveFloat; // 카메라 FOV값 변화를 위한 Curve Float
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY()
 	UCurveFloat *RecoilCurveFloat; // Recoil 딜레이를 위한 Curve Float
 
 	FTimeline ADSTimeline; // Aim Down Sight의 타임라인
@@ -162,8 +161,6 @@ protected:
 	// APawn interface
 	virtual void SetupPlayerInputComponent(UInputComponent* InputComponent) override;
 	// End of APawn interface
-
-	virtual void TestFunction();
 
 public:
 	/** Returns Mesh1P subobject **/

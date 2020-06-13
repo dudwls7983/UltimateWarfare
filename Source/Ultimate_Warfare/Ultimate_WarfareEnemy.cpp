@@ -7,7 +7,7 @@ AUltimate_WarfareEnemy::AUltimate_WarfareEnemy()
 	stateMachine = CreateDefaultSubobject<UStateMachine>(FName("State Machine"));
 }
 
-void AUltimate_WarfareEnemy::TestFunction()
+void AUltimate_WarfareEnemy::BeginPlay()
 {
-	UE_LOG(LogTemp, Display, TEXT("Ultimate_WarfareEnemy"));
+	Super::BeginPlay();
 }

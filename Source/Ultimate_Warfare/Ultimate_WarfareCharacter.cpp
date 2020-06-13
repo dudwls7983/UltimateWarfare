@@ -64,10 +64,11 @@ AUltimate_WarfareCharacter::AUltimate_WarfareCharacter()
 	GetCharacterMovement()->MaxWalkSpeed = 300.f;
 	PrimaryActorTick.bCanEverTick = true;
 
-	CameraCurveFloat = CreateDefaultSubobject<UCurveFloat>(TEXT("AimDownSightCurve"));
+	CameraCurveFloat = NewObject<UCurveFloat>();
 	CameraCurveFloat->FloatCurve.Reset();
 	CameraCurveFloat->FloatCurve.AddKey(0.f, 0.f);
 	CameraCurveFloat->FloatCurve.AddKey(0.15f, 1.f);
+	CameraCurveFloat->AddToRoot();
 
 	FOnTimelineFloat ADSInterpFunction;
 	ADSInterpFunction.BindUFunction(this, FName("InterpADSFOV"));
@@ -87,11 +88,12 @@ AUltimate_WarfareCharacter::AUltimate_WarfareCharacter()
 	CrouchTimeline = FTimeline();
 	CrouchTimeline.AddInterpFloat(CameraCurveFloat, CrouchInterpFunction, TEXT("InterpValue"));
 
-	RecoilCurveFloat = CreateDefaultSubobject<UCurveFloat>(TEXT("RecoilCurve"));
+	RecoilCurveFloat = NewObject<UCurveFloat>();
 	RecoilCurveFloat->FloatCurve.Reset();
 	RecoilCurveFloat->FloatCurve.AddKey(0.f, 0.f);
 	RecoilCurveFloat->FloatCurve.AddKey(0.2f, 0.f);
 	RecoilCurveFloat->FloatCurve.AddKey(0.3f, 1.f);
+	RecoilCurveFloat->AddToRoot();
 
 	FOnTimelineFloat RecoilInterpFunction;
 	RecoilInterpFunction.BindUFunction(this, FName("InterpRecoil"));
@@ -111,8 +113,6 @@ void AUltimate_WarfareCharacter::BeginPlay()
 	Mesh1P->SetHiddenInGame(false, true);
 
 	CameraRelativeLocation = FirstPersonCameraComponent->GetRelativeTransform().GetLocation();
-
-	TestFunction();
 }
 
 void AUltimate_WarfareCharacter::Tick(float delta)
@@ -190,11 +190,6 @@ void AUltimate_WarfareCharacter::SetupPlayerInputComponent(class UInputComponent
 	PlayerInputComponent->BindAxis("LookUpRate", this, &AUltimate_WarfareCharacter::LookUpAtRate);
 }
 
-void AUltimate_WarfareCharacter::TestFunction()
-{
-	UE_LOG(LogTemp, Display, TEXT("Ultimate_WarfareCharacter"));
-}
-
 void AUltimate_WarfareCharacter::OnFire()
 {
 	UWorld* const World = GetWorld();
@@ -216,7 +211,7 @@ void AUltimate_WarfareCharacter::OnFire()
 		const FVector EyePosition = camManager->GetCameraLocation();
 		FRotator EyeRotation = camManager->GetCameraRotation();
 		float randFloat = FMath::FRandRange(0, PI);
-		float inaccuracy = FMath::FRandRange(0, inAccuracy);
+		float inaccuracy = FMath::FRandRange(0, isADS ? inAccuracy : inAccuracy * 3);
 		EyeRotation.Pitch -= FMath::Sin(randFloat) * inaccuracy;
 		EyeRotation.Yaw += FMath::Cos(randFloat) * inaccuracy;
 		const FVector EndLocation = EyePosition + EyeRotation.Vector() * maxDistance;
@@ -337,7 +332,7 @@ void AUltimate_WarfareCharacter::ToggleAimDownSight()
 
 void AUltimate_WarfareCharacter::InterpADSFOV(float interp)
 {
-	FirstPersonCameraComponent->FieldOfView = FMath::Lerp<float, float>(90.f, 75.f, interp);
+	FirstPersonCameraComponent->FieldOfView = FMath::Lerp<float, float>(90.f, 60.f, interp);
 }
 
 void AUltimate_WarfareCharacter::BeginSprint()

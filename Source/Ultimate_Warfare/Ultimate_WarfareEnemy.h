@@ -21,9 +21,9 @@ private:
 
 public:
 	AUltimate_WarfareEnemy();
-	
+
 protected:
-	virtual void TestFunction() override;
+	virtual void BeginPlay();
 	
 	
 };
