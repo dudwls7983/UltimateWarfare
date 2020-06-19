@@ -27,6 +27,8 @@ AUltimate_WarfareEnemy::AUltimate_WarfareEnemy()
 
 	target = nullptr;
 	canSeeTarget = false;
+
+	fireRate = 0.1f;
 }
 
 // 시야에 대한 변화가 일어날 때마다 함수 호출

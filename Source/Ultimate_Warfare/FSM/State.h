@@ -11,8 +11,10 @@
 	static TWeakObjectPtr<class_name> instance;\
 public:\
 	static class_name* GetInstance() {\
-		if (instance.Get() == nullptr)\
+		if (instance.Get() == nullptr){\
 			instance = NewObject<class_name>();\
+			instance->AddToRoot();\
+		}\
 		return instance.Get();\
 	}\
 	virtual void OnEnter(class AUltimate_WarfareEnemy *owner) override;\

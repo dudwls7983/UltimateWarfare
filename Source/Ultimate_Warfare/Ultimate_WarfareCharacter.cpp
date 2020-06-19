@@ -15,6 +15,7 @@
 #include "DrawDebugHelpers.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetSystemLibrary.h"
 #include "Perception/AIPerceptionSystem.h"
 #include "Perception/AIPerceptionStimuliSourceComponent.h"
 #include "Perception/AISenseConfig_Sight.h"
@@ -35,6 +36,8 @@ AUltimate_WarfareCharacter::AUltimate_WarfareCharacter()
 
 	GetMesh()->RelativeLocation = FVector(0.f, 0.f, -100.f);
 	GetMesh()->RelativeRotation = FRotator(0.f, -90.f, 0.f);
+	GetMesh()->bOwnerNoSee = true;
+	GetMesh()->bOnlyOwnerSee = false;
 
 	// Create a CameraComponent	
 	FirstPersonCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
@@ -204,45 +207,37 @@ void AUltimate_WarfareCharacter::OnFire()
 	UWorld* const World = GetWorld();
 	if (World != NULL)
 	{
-		//const FRotator SpawnRotation = GetControlRotation();
-		// MuzzleOffset is in camera space, so transform it to world space before offsetting from the character location to find the final muzzle position
-		//const FVector SpawnLocation = ((FP_MuzzleLocation != nullptr) ? FP_MuzzleLocation->GetComponentLocation() : GetActorLocation()) + SpawnRotation.RotateVector(GunOffset);
+		FMinimalViewInfo viewInfo;
+		FirstPersonCameraComponent->GetCameraView(0.f, viewInfo);
 
-		//Set Spawn Collision Handling Override
-		//FActorSpawnParameters ActorSpawnParams;
-		//ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding;
+		const FVector EyePosition = viewInfo.Location;
+		FRotator EyeRotation = viewInfo.Rotation;
 
-		// spawn the projectile at the muzzle
-		//World->SpawnActor<AUltimate_WarfareProjectile>(ProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
-
-		APlayerCameraManager *camManager = GetWorld()->GetFirstPlayerController()->PlayerCameraManager;
-
-		const FVector EyePosition = camManager->GetCameraLocation();
-		FRotator EyeRotation = camManager->GetCameraRotation();
 		float randFloat = FMath::FRandRange(0, PI);
-		float inaccuracy = FMath::FRandRange(0, isADS ? inAccuracy : inAccuracy * 3);
+		float inaccuracy = FMath::FRandRange(0, isADS ? inAccuracy : inAccuracy * 5);
 		EyeRotation.Pitch -= FMath::Sin(randFloat) * inaccuracy;
 		EyeRotation.Yaw += FMath::Cos(randFloat) * inaccuracy;
+
 		const FVector EndLocation = EyePosition + EyeRotation.Vector() * maxDistance;
 		FVector force = (EndLocation - EyePosition).GetSafeNormal();
 
 		FHitResult hitResult;
-		GetWorld()->LineTraceSingleByChannel(hitResult, EyePosition, EndLocation, ECollisionChannel::ECC_Visibility);
-
-		DrawDebugLine(GetWorld(), EyePosition, hitResult.Location, FColor::Red, false, 10.f, 0, 0.5f);
-
-		AActor *hitObject = hitResult.GetActor();
-		if (hitObject != NULL)
+		if (UKismetSystemLibrary::LineTraceSingle(this, EyePosition, EndLocation, UEngineTypes::ConvertToTraceType(ECC_Visibility),
+			false, TArray<AActor*>(), EDrawDebugTrace::ForDuration, hitResult, true))
 		{
-			TArray<AActor*> ignoredActors;
-			UGameplayStatics::ApplyPointDamage(hitObject, 100.f, force, hitResult, GetWorld()->GetFirstPlayerController(), this, UDamageType::StaticClass());
-		}
+			AActor *hitObject = hitResult.GetActor();
+			if (hitObject != NULL)
+			{
+				TArray<AActor*> ignoredActors;
+				UGameplayStatics::ApplyPointDamage(hitObject, 100.f, force, hitResult, GetWorld()->GetFirstPlayerController(), this, UDamageType::StaticClass());
+			}
 
-		// 움직일 수 있는 오브젝트는 힘을 가한다.
-		UPrimitiveComponent *hitComponent = hitResult.GetComponent();
-		if (hitComponent != NULL && hitComponent->Mobility == EComponentMobility::Movable && hitComponent->IsSimulatingPhysics() == true)
-		{
-			hitComponent->AddImpulseAtLocation(force * 100000.f, hitResult.Location);
+			// 움직일 수 있는 오브젝트는 힘을 가한다.
+			UPrimitiveComponent *hitComponent = hitResult.GetComponent();
+			if (hitComponent != NULL && hitComponent->Mobility == EComponentMobility::Movable && hitComponent->IsSimulatingPhysics() == true)
+			{
+				hitComponent->AddImpulseAtLocation(force * 100000.f, hitResult.Location);
+			}
 		}
 	}
 
@@ -370,6 +365,7 @@ void AUltimate_WarfareCharacter::InterpSprintFOV(float interp)
 
 void AUltimate_WarfareCharacter::BeginFire()
 {
+	if (isSprint) return;
 	// isReloading = true then return
 	isFire = true;
 }
@@ -417,4 +413,9 @@ void AUltimate_WarfareCharacter::InterpRecoil(float interp)
 	AddControllerYawInput(newRotation.Yaw);
 
 	PreviousRecoilVector = CameraRecoilVector;
+}
+
+void AUltimate_WarfareCharacter::SetNextShootTime(float time)
+{
+	nextShootTime = time;
 }

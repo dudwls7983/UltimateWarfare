@@ -49,6 +49,8 @@ public:
 	FORCEINLINE void SetState(UState *newState) { stateMachine->SetState(newState); }
 	FORCEINLINE void SetChaseStartTime(float time) { chaseStartTime = time; }
 
+	FORCEINLINE void Fire() { OnFire(); }
+
 	UFUNCTION()
 	void OnSightUpdate(const TArray<AActor *> &actors);
 
@@ -59,6 +61,6 @@ public:
 	/** how many time to chase the target */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
 	float chaseTime = 5.f;
-	
+
 	TMap<EEnemyState, UState *> stateMap;
 };
