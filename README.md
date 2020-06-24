@@ -4,7 +4,7 @@
 
 ### 유튜브 영상  
   - FSM<br/>
-  &nbsp; &nbsp; [![IMAGE ALT TEXT](http://img.youtube.com/vi/A8un5znJCmc/0.jpg)](http://www.youtube.com/watch?v=A8un5znJCmc "Video Title")
+  &nbsp; [![IMAGE ALT TEXT](http://img.youtube.com/vi/A8un5znJCmc/0.jpg)](http://www.youtube.com/watch?v=A8un5znJCmc "Video Title")
 
 ### 구현된 것
   - FPS(Movement, Weapon)
